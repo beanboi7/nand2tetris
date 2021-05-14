@@ -14,9 +14,9 @@ CHIP Inc16 {
 
     PARTS:
    // Put you code here:
-   Not(in=in[0], out=x); //This is the magical way of 
-   HalfAdder(a=in[0], b=x, sum=b0, carry=c); //getting 1 using DeMorgan's law kewk
-
+//    Not(in=in[0], out=x);
+//    Add16(a=in,b[1..15]=false, b[0]=true, out=out);
+   HalfAdder(a=in[0], b=x, sum=b0, carry=c);
    HalfAdder(a=in[0], b=b0, sum=out[0], carry=c0);
    HalfAdder(a=in[1], b=c0, sum=out[1], carry=c1);
    HalfAdder(a=in[2], b=c1, sum=out[2], carry=c2);
