@@ -1,0 +1,91 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in 
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine 
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input 
+ * holds the value of this location. If the current instruction needs 
+ * to write a value to M, the value is placed in outM, the address 
+ * of the target location is placed in the addressM output, and the 
+ * writeM control bit is asserted. (When writeM==0, any value may 
+ * appear in outM). The outM and writeM outputs are combinational: 
+ * they are affected instantaneously by the execution of the current 
+ * instruction. The addressM and pc outputs are clocked: although they 
+ * are affected by the execution of the current instruction, they commit 
+ * to their new values only in the next time step. If reset==1 then the 
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
+ * than to the address resulting from executing the current instruction. 
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // Put your code here:
+    
+    Or(a=instruction[0], b=instruction[1], out=inst1);
+    Or(a=inst1, b=instruction[2], out=instassert); //chooses if aluout or new inst should be going to the AReg
+    And(a=instruction[15], b=instassert, out=mux1out);
+    Mux16(a=instruction, b=aluout, sel=mux1out, out=aRegin);
+    
+    Not(in=instruction[15], out=notinstMSB);
+    Or(a=notinstMSB, b=instruction[5], out=aload); //load value into A reg only when A instruction is given
+    ARegister(in=aRegin, load=aload, out=aRegout);
+    
+    And(a=instruction[15], b=instruction[4], out=dload);
+    DRegister(in=aluout, load=dload, out=dRegout);
+
+    Mux16(a=aRegout, b=inM, sel=instruction[12], out=aluinp2);
+    ALU(x=dRegout, y=aluinp2, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluout, out=outM, zr=zrout, ng=ngout);
+
+    And(a=instruction[15], b=instruction[3], out=writeM); //using MSB of instruction because writeM is asserted only if its a C instruction
+    Or16(a=aRegout, b=false, out[0..14]=addressM);
+
+    Or(a=instruction[2], b=instruction[1], out=or1);
+    Or(a=or1, b=instruction[0], out=or2);
+    Not(in=or2, out=positive); //PC++ logic when 000 are jump bits
+
+    Or(a=positive, b=false, out=jgt); //JGT
+    Or(a=zrout, b=false, out=jeq); //JEQ
+    Or(a=jeq, b=jgt, out=jge); //JGE
+    Or(a=ngout, b=false, out=jlt); //JLT
+    Or(a=positive, b=ngout, out=jne); //JNE
+    Or(a=jeq, b=jlt, out=jle); //JLE
+    Or(a=ngout, b=zrout, out=jmp1); 
+    Or(a=jmp1, b=positive, out=jmp); //JMP
+    
+    Mux(a=positive, b=jgt, sel=instruction[0], out=jmpA);
+    Mux(a=jeq, b=jge, sel=instruction[0], out=jmpB);
+    Mux(a=jlt, b=jne, sel=instruction[0], out=jmpC);
+    Mux(a=jle, b=jmp, sel=instruction[0], out=jmpD);
+
+    Mux(a=jmpA, b=jmpB, sel=instruction[1], out=jmpE);
+    Mux(a=jmpC, b=jmpD, sel=instruction[1], out=jmpF);
+
+    Mux(a=jmpE, b=jmpF, sel=instruction[2], out=jumpLoad);
+    Not(in=jumpLoad, out=pcinc); //pc++ only if the load(jump) is not asserted
+
+    PC(in=aRegout, load=jumpLoad, inc=pcinc, reset=reset, out[0..14]=pc);
+
+
+    
+
+}
