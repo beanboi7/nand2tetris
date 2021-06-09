@@ -40,31 +40,32 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    Not(in=instruction[15], out=Ainst);
+    Not(in=Ainst, out=Cinst);
+
+    And(a=Cinst, b=instruction[5], out=ALUtoA);
+    Mux16(a=instruction, b=aluout, sel=ALUtoA, out=aRegin);
     
-    Or(a=instruction[0], b=instruction[1], out=inst1);
-    Or(a=inst1, b=instruction[2], out=instassert); //chooses if aluout or new inst should be going to the AReg
-    And(a=instruction[15], b=instassert, out=mux1out);
-    Mux16(a=instruction, b=aluout, sel=mux1out, out=aRegin);
-    
-    Not(in=instruction[15], out=notinstMSB);
-    Or(a=notinstMSB, b=instruction[5], out=aload); //load value into A reg only when A instruction is given
+    Or(a=Ainst, b=ALUtoA, out=aload); //load value into A reg only when A instruction is given
     ARegister(in=aRegin, load=aload, out=aRegout);
+    Mux16(a=aRegout, b=inM, sel=instruction[12], out=AMout);
     
-    And(a=instruction[15], b=instruction[4], out=dload);
+    And(a=Cinst, b=instruction[4], out=dload);
     DRegister(in=aluout, load=dload, out=dRegout);
+    
+    ALU(x=dRegout, y=AMout, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluout, out=outM, zr=zrout, ng=ngout);
 
-    Mux16(a=aRegout, b=inM, sel=instruction[12], out=aluinp2);
-    ALU(x=dRegout, y=aluinp2, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluout, out=outM, zr=zrout, ng=ngout);
-
-    And(a=instruction[15], b=instruction[3], out=writeM); //using MSB of instruction because writeM is asserted only if its a C instruction
+    And(a=Cinst, b=instruction[3], out=writeM); //using MSB of instruction because writeM is asserted only if its a C instruction
     Or16(a=aRegout, b=false, out[0..14]=addressM);
 
-    Or(a=instruction[2], b=instruction[1], out=or1);
-    Or(a=or1, b=instruction[0], out=or2);
-    Not(in=or2, out=positive); //PC++ logic when 000 are jump bits
+    //positive is !zr and !ng
+    Not(in=zrout, out=notZR);
+    Not(in=ngout, out=notNG);
+    And(a=notZR, b=notNG, out=pos1);
+    And(a=pos1, b=instruction[0], out=positive);
 
-    Or(a=positive, b=false, out=jgt); //JGT
-    Or(a=zrout, b=false, out=jeq); //JEQ
+    And(a=positive, b=instruction[0], out=jgt); //JGT
+    And(a=zrout, b=instruction[1], out=jeq); //JEQ
     Or(a=jeq, b=jgt, out=jge); //JGE
     Or(a=ngout, b=false, out=jlt); //JLT
     Or(a=positive, b=ngout, out=jne); //JNE
@@ -76,14 +77,14 @@ CHIP CPU {
     Mux(a=jeq, b=jge, sel=instruction[0], out=jmpB);
     Mux(a=jlt, b=jne, sel=instruction[0], out=jmpC);
     Mux(a=jle, b=jmp, sel=instruction[0], out=jmpD);
-
     Mux(a=jmpA, b=jmpB, sel=instruction[1], out=jmpE);
     Mux(a=jmpC, b=jmpD, sel=instruction[1], out=jmpF);
-
     Mux(a=jmpE, b=jmpF, sel=instruction[2], out=jumpLoad);
-    Not(in=jumpLoad, out=pcinc); //pc++ only if the load(jump) is not asserted
+    
+    And(a=Cinst, b=jumpLoad, out=loadPC);
+    Not(in=loadPC, out=PCinc); //pc++ only if the load(jump) is not asserted
 
-    PC(in=aRegout, load=jumpLoad, inc=pcinc, reset=reset, out[0..14]=pc);
+    PC(in=aRegout, load=loadPC, inc=PCinc, reset=reset, out[0..14]=pc);
 
 
     
