@@ -41,16 +41,16 @@ CHIP CPU {
     PARTS:
     // Put your code here:
     Not(in=instruction[15], out=Ainst);
-    Not(in=Ainst, out=Cinst);
+    Not(in=Ainst, out=Cinst); //taking C and A instruction via the MSB of instruction
 
-    And(a=Cinst, b=instruction[5], out=ALUtoA);
-    Mux16(a=instruction, b=aluout, sel=ALUtoA, out=aRegin);
+    And(a=Cinst, b=instruction[5], out=instCtrl); //to load aluout into ARegister when its a C instruction
+    Mux16(a=instruction, b=aluout, sel=instCtrl, out=aRegin); 
     
-    Or(a=Ainst, b=ALUtoA, out=aload); //load value into A reg only when A instruction is given
+    Or(a=Ainst, b=instCtrl, out=aload); //assert load when either A or C instruction
     ARegister(in=aRegin, load=aload, out=aRegout);
-    Mux16(a=aRegout, b=inM, sel=instruction[12], out=AMout);
+    Mux16(a=aRegout, b=inM, sel=instruction[12], out=AMout); //M value or A instruction
     
-    And(a=Cinst, b=instruction[4], out=dload);
+    And(a=Cinst, b=instruction[4], out=dload); //Load when its C instruction only into D register
     DRegister(in=aluout, load=dload, out=dRegout);
     
     ALU(x=dRegout, y=AMout, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluout, out=outM, zr=zrout, ng=ngout);
@@ -62,7 +62,7 @@ CHIP CPU {
     Not(in=zrout, out=notZR);
     Not(in=ngout, out=notNG);
     And(a=notZR, b=notNG, out=pos1);
-    And(a=pos1, b=instruction[0], out=positive);
+    And(a=pos1, b=instruction[0], out=positive); //positive flag when its not zg and zr asserted
 
     And(a=positive, b=instruction[0], out=jgt); //JGT
     And(a=zrout, b=instruction[1], out=jeq); //JEQ
