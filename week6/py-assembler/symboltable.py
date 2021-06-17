@@ -102,6 +102,11 @@ class SymbolTable:
     
     def keywordTable(self,key):
         keyword = {
+            "SP":"0000000000000000",
+            "LCL":"0000000000000001",
+            "ARG":"0000000000000010",
+            "THIS":"0000000000000011",
+            "THAT":"0000000000000100",
             "SCREEN": str(format(16384,'016b')),
             "KBD": str(format(24576, '016b')),
             "0": "0000000000000000",

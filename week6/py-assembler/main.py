@@ -4,7 +4,7 @@ import re
 
 symb = SymbolTable()
 
-f = open("../add/Add.asm","r")
+f = open("../pong/Pong.asm","r") #file to be assembled
 line_count = 0
 varSpace = 16
 labels = {}
@@ -62,7 +62,7 @@ for line in f:
                 AReg = symb.regTable(line[1:])
                 inst += AReg + "\n"
                 continue
-            elif "KBD" or "SCREEN" in line[1:]:
+            elif "KBD" or "SCREEN" or "SP" or "LCL" or "ARG" or "THIS" or "THAT" in line[1:]:
                 AReg = symb.keywordTable(line[1:])
                 inst += AReg + "\n"
                 continue
@@ -103,41 +103,6 @@ for line in f:
                 inst += AReg + "\n"
                 continue
 
-
-        
-        
-        # try:
-        #     temp = int(line[1:])
-        #     #assuming its an int
-        #     if temp >=0 and temp <=15:
-        #         AReg = symb.regTable(line[1:])
-        #     else:
-        #         varMem = format(varSpace,'016b')
-        #         labels[line[1:]] = str(varMem)
-        #         AReg = str(varMem)
-        #     varSpace +=1
-             
-        #     inst += AReg + "\n"
-        #     continue
-        # except:
-        #     #for variables
-        #     if line[1:] not in labels:
-        #         temp = format(varSpace,'016b')
-        #         labels[line[1:]] = temp
-        #         AReg = str(temp)
-        #         inst += AReg + "\n"
-        #         continue
-            
-        #     elif "SCREEN" or "KBD" in line[1:]: 
-        #         AReg = symb.keywordTable(line[1:])
-        #         inst += AReg + "\n"
-        #         continue
-        #     elif line[1] == "R":
-        #         AReg = symb.regTable(line[1:])
-        #         inst += AReg + "\n"
-        #         continue
-
-    # print(labels)
     arr = re.split("=|;",line)
     print(arr)
     
@@ -180,7 +145,7 @@ for line in f:
 #end of 2nd pass
 f.close()
 #write the op into the new file
-with open("add.hack",'w') as f:
+with open("pong2.hack",'w') as f: 
     f.write(inst)
 
 f.close()
